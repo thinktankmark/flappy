@@ -1,0 +1,61 @@
+body {
+    font-family:'Courier New', Courier, monospace;
+    text-align: center;
+    margin: 0;
+    overflow: hidden;
+}
+
+#board {
+    /* background-color: skyblue; */
+    background-image: url("./flappybirdbg.png");
+}
+/* --- SCREENS WRAPPER --- */
+.screen-container {
+    width: 300%;
+    height: 100vh;
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+/* --- EACH SCREEN --- */
+.screen {
+    width: 100vw;
+    height: 100vh;
+    flex-shrink: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Screen styles */
+#screen1 { background: #87CEEB; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+#screen2 { background: #f5f5f5; display:flex; flex-direction:column; align-items:center; padding-top:40px; }
+#screen3 { background: #000; display:flex; justify-content:center; align-items:center; }
+
+/* Buttons */
+button {
+    padding: 12px 18px;
+    font-size: 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: #007bff;
+    color: white;
+    margin-top: 15px;
+}
+
+/* Camera preview */
+#cameraPreview {
+    width: 240px;
+    height: 240px;
+    background: #000;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+#selfiePreview {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    margin-top: 15px;
+    display:none;
+}
