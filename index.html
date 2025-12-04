@@ -1,778 +1,458 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Flappy Selfie — Refactor</title>
-  <style>
-    :root { --btn: #007bff; --bg-color: #87CEEB; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      background: var(--bg-color);
-      touch-action: manipulation;
-      overscroll-behavior: none;
-    }
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Selfie</title>
 
-    /* Container for three screens, horizontal slide */
-    .screen-container {
-      display: flex;
-      width: 300%;
-      height: 100dvh; /* mobile-friendly viewport unit */
-      transition: transform 400ms ease;
-      will-change: transform;
-    }
-    .screen {
-      width: 100%;
-      height: 100dvh;
-      flex-shrink: 0;
-      box-sizing: border-box;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 18px;
-    }
+    <style>
+      body 
+      {
+        font-family:'Courier New', Courier, monospace;
+        text-align: center;
+        margin: 0;
+        overflow: hidden;
+      }
 
-    /* backgrounds */
-    #screen1 { background: linear-gradient(180deg,#87CEEB 0%, #6fc2f0 100%); flex-direction:column; gap:12px; }
-    #screen2 { background: #f5f5f5; flex-direction:column; gap:12px; padding-top:28px; align-items:center; }
-    #screen3 {
-      background-image: url("./flappybirdbg.png");
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-position: center;
-      position: relative;
-      padding: 0;
-      overflow: hidden;
-    }
+      #board,
+      .scr-container
+      {
+        background-image: url("./flappybirdbg.png");
+      }
+      .scr-container 
+      {
+        width: 560px;
+        height: 640px;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        display: flex;
+      }
+      /* --- SCREENS WRAPPER --- */
+      .screen-container 
+      {
+        width: 300%;
+        height: 100vh;
+        display: flex;
+        transition: transform 0.5s ease-in-out;
+      }
 
-    /* small container inside screens */
-    .scr-container {
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:12px;
-    }
+      /* --- EACH SCREEN --- */
+      .screen 
+      {
+        width: 100vw;
+        height: 100vh;
+        flex-shrink: 0;
+        padding: 20px;
+        box-sizing: border-box;
+      }
 
-    h1 { margin:0; font-size: clamp(20px, 6vw, 36px); color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-    p { margin: 0; color: #fff; opacity: .95; }
+      /* Screen styles */
+      #screen1 { background: #87CEEB; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+      #screen2 { background: #f5f5f5; display:flex; flex-direction:column; align-items:center; padding-top:40px; }
+      #screen3 { background: #000; display:flex; justify-content:center; align-items:center; }
 
-    button {
-      -webkit-tap-highlight-color: transparent;
-      padding: 10px 16px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      background: var(--btn);
-      color: #fff;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-    }
-    button[disabled] { opacity: .5; cursor: not-allowed; }
+      /* Buttons */
+      button 
+      {
+        padding: 12px 18px;
+        font-size: 18px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: #007bff;
+        color: white;
+        margin-top: 15px;
+      }
 
-    /* camera preview */
-    #cameraPreview {
-      width: 240px;
-      height: 240px;
-      border-radius: 12px;
-      background: #000;
-      object-fit: cover;
-      transform: translateZ(0);
-    }
+      /* Camera preview */
+      #cameraPreview 
+      {
+        width: 240px;
+        height: 240px;
+        background: #000;
+        border-radius: 12px;
+        margin: 20px 0;
+      }
 
-    #selfiePreview {
-      width: 120px;
-      height: 120px;
-      border-radius: 12px;
-      display: none;
-      object-fit: cover;
-      border: 2px solid rgba(255,255,255,0.6);
-    }
+      #selfiePreview 
+      {
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        margin-top: 15px;
+        display:none;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gifuct-js/dist/gifuct.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"></script>
+    <!-- <script defer src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script> -->
+  </head>
+  <body>
 
-    /* canvas board occupies full screen in screen3 */
-    #board {
-      display:block;
-      width:100%;
-      height:100%;
-      touch-action: none;
-    }
+    <div id="screens" class="screen-container">
 
-    /* overlay UI on game screen */
-    .game-ui {
-      position: absolute;
-      left: 12px;
-      top: 12px;
-      z-index: 30;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .top-right {
-      position: absolute;
-      right: 12px;
-      top: 12px;
-      z-index: 30;
-      color: #fff;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.4);
-      font-weight: 700;
-      font-size: 20px;
-    }
-
-    .center-overlay {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%,-50%);
-      z-index: 40;
-      text-align:center;
-      pointer-events: none;
-    }
-
-    .center-overlay button { pointer-events: auto; }
-
-    .hidden { display:none !important; }
-
-    /* game over panel */
-    .panel {
-      position: absolute;
-      left: 50%;
-      top: 40%;
-      transform: translate(-50%,-50%);
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      padding: 18px;
-      border-radius: 12px;
-      z-index: 50;
-      text-align:center;
-      min-width: 220px;
-    }
-
-    /* responsive tweaks */
-    @media (min-width: 720px) {
-      #cameraPreview { width: 320px; height: 320px; }
-      #selfiePreview { width: 140px; height: 140px; }
-    }
-  </style>
-</head>
-<body>
-
-  <div id="screens" style="width:100%;height:100dvh;overflow:hidden;">
-    <div class="screen-container" id="screenContainer">
-
-      <!-- Screen 1 -->
-      <div id="screen1" class="screen">
-        <div class="scr-container">
-          <h1>Flappy Selfie</h1>
-          <p>Use your camera to make a bird — only your face will be used.</p>
-          <button id="goToCamera">Start</button>
+        <!-- ------------------------- -->
+        <!-- SCREEN 1 - INTRO -->
+        <!-- ------------------------- -->
+        <div id="screen1" class="screen">
+            <div class="scr-container">
+              <h1>Flappy Selfie</h1>
+              <p>Tap below to begin</p>
+              <button id="goToCamera">Start</button>
+            </div>        
         </div>
-      </div>
 
-      <!-- Screen 2 - Camera -->
-      <div id="screen2" class="screen">
-        <div class="scr-container">
-          <h2>Take your selfie</h2>
-          <video id="cameraPreview" autoplay playsinline muted></video>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button id="captureBtn">📸 Capture Face</button>
-            <img id="selfiePreview" alt="selfie preview">
-          </div>
-          <div style="display:flex;gap:8px;margin-top:6px;">
+        <!-- ------------------------- -->
+        <!-- SCREEN 2 - CAMERA -->
+        <!-- ------------------------- -->
+        <div id="screen2" class="screen">
+          <div class="scr-container">
+            <h2>Take your selfie</h2>
+            <video id="cameraPreview" autoplay playsinline></video>
+            <button id="captureBtn">📸 Capture Selfie</button>
+            <img id="selfiePreview">
             <button id="goToGame" disabled>Start Game</button>
-            <button id="retakeBtn" class="hidden">Retake</button>
-          </div>
-          <small id="cameraNotice" style="color:#666;margin-top:6px;">Face detection preferred. If unsupported, central crop will be used.</small>
-        </div>
-      </div>
-
-      <!-- Screen 3 - Game -->
-      <div id="screen3" class="screen">
-        <canvas id="board"></canvas>
-
-        <div class="game-ui">
-          <button id="pauseBtn">⏸</button>
+          </div>        
         </div>
 
-        <div class="top-right" id="scoreDisplay">0</div>
-
-        <div class="center-overlay" id="startOverlay">
-          <div style="font-size:22px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.5);margin-bottom:8px;">Tap to start</div>
-          <button id="playBtn">Play</button>
+        <!-- ------------------------- -->
+        <!-- SCREEN 3 - GAME -->
+        <!-- ------------------------- -->
+        <div id="screen3" class="screen">
+            <canvas id="board"></canvas>
         </div>
-
-        <div id="gameOverPanel" class="panel hidden">
-          <div style="font-size:20px;font-weight:700;margin-bottom:8px;">Game Over</div>
-          <div id="finalScore" style="font-size:18px;margin-bottom:12px;">Score: 0</div>
-          <div style="display:flex;gap:8px;justify-content:center;">
-            <button id="restartBtn">Restart</button>
-            <button id="homeBtn">Home</button>
-          </div>
-        </div>
-
-      </div>
     </div>
-  </div>
 
-<script>
-/* ===========================================================
-   Single-file, cleaned & modular-ish structure (Option D)
-   - Face detection (FaceDetector) with fallback
-   - Compose bird sprite (canvas) with face overlay
-   - Mobile-friendly canvas scaling (devicePixelRatio)
-   - Fixed timestep loop for deterministic physics
-   =========================================================== */
-
-(async function() {
-  // ---- UI Elements ----
-  const screenContainer = document.getElementById('screenContainer');
-  const goToCamera = document.getElementById('goToCamera');
-  const captureBtn = document.getElementById('captureBtn');
-  const goToGameBtn = document.getElementById('goToGame');
-  const retakeBtn = document.getElementById('retakeBtn');
-  const cameraPreview = document.getElementById('cameraPreview');
-  const selfiePreview = document.getElementById('selfiePreview');
-  const cameraNotice = document.getElementById('cameraNotice');
-  const board = document.getElementById('board');
-  const startOverlay = document.getElementById('startOverlay');
-  const playBtn = document.getElementById('playBtn');
-  const scoreDisplay = document.getElementById('scoreDisplay');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const gameOverPanel = document.getElementById('gameOverPanel');
-  const finalScoreEl = document.getElementById('finalScore');
-  const restartBtn = document.getElementById('restartBtn');
-  const homeBtn = document.getElementById('homeBtn');
-
-  // ---- State ----
-  let currentScreen = 0; // 0,1,2
-  let stream = null;
-  let selfieDataUrl = null;
-  let composedBird = null; // Image/Canvas used as bird sprite
-  let resources = {}; // preloaded images
-
-  // ---- Game constants & dynamic values ----
-  const DPR = () => (window.devicePixelRatio || 1);
-  let ctx;
-  let W = 0, H = 0;
-  // bird size (will scale based on screen)
-  let bird = { x: 0, y: 0, w: 0, h: 0, vy: 0 };
-  let gravity = 0.45;
-  let jumpPower = -8;
-  let pipes = [];
-  let pipeSpeed = 2.4;
-  let pipeGap = 0;
-  let spawnTimer = 0;
-  let spawnInterval = 1500; // ms
-  let score = 0;
-  let running = false;
-  let paused = false;
-  let lastFrameTime = performance.now();
-  let accumulator = 0;
-  const FIXED_DT = 1000 / 60; // 60 fps step
-
-  // ---- helpers ----
-  function goToScreen(n) {
-    currentScreen = n;
-    screenContainer.style.transform = `translateX(-${n * 100}%)`;
-  }
-
-  function enableElement(el, yes=true) { el.disabled = !yes; if (yes) el.classList.remove('disabled'); else el.classList.add('disabled'); }
-  function px(x){ return Math.round(x); }
-
-  // ---- preload images (pipes + optional gif) ----
-  async function preload() {
-    const loadImg = (src) => new Promise((res, rej) => {
-      const i = new Image();
-      i.onload = () => res(i);
-      i.onerror = rej;
-      i.src = src;
-      i.crossOrigin = "anonymous";
-    });
-    try {
-      resources.topPipe = await loadImg('./toppipe.png');
-      resources.bottomPipe = await loadImg('./bottompipe.png');
-      // body GIF or fallback PNG used as base bird body
-      resources.bodyGif = await loadImg('./1.gif'); // if gif loads as image, it will be static; but we'll draw it as a frame
-    } catch (e) {
-      console.warn('Failed to preload some images', e);
-    }
-  }
-
-  // ---- camera open ----
-  async function openCamera() {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-      cameraPreview.srcObject = stream;
-      cameraPreview.play().catch(()=>{});
-    } catch (e) {
-      alert('Camera access denied or unsupported. Please allow camera or use a compatible device.');
-      console.error(e);
-    }
-  }
-
-  // ---- face-only capture ----
-  async function captureFaceOnly() {
-    // prefer ImageCapture API for best frame
-    let frameBitmap = null;
-    try {
-      if ('ImageCapture' in window && stream && stream.getVideoTracks().length) {
-        const track = stream.getVideoTracks()[0];
-        const ic = new ImageCapture(track);
-        frameBitmap = await ic.grabFrame(); // ImageBitmap
-      }
-    } catch (e) {
-      console.warn('ImageCapture failed, will fallback to drawing video. ', e);
-    }
-
-    // fallback: draw video to canvas
-    let tmpCanvas = document.createElement('canvas');
-    const sizeOut = 480; // higher res for better overlay
-    tmpCanvas.width = cameraPreview.videoWidth || 640;
-    tmpCanvas.height = cameraPreview.videoHeight || tmpCanvas.width;
-    const tctx = tmpCanvas.getContext('2d');
-    tctx.drawImage(cameraPreview, 0, 0, tmpCanvas.width, tmpCanvas.height);
-
-    // Try FaceDetector (native) if available
-    let faceBox = null;
-    try {
-      if ('FaceDetector' in window) {
-        const fd = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
-        const faces = await fd.detect(frameBitmap || tmpCanvas);
-        if (faces && faces.length) {
-          const b = faces[0].boundingBox;
-          // normalize box to integers and add a little padding
-          const pad = 0.25;
-          const cx = b.x + b.width/2;
-          const cy = b.y + b.height/2;
-          const side = Math.max(b.width, b.height) * (1 + pad);
-          faceBox = {
-            x: Math.max(0, Math.round(cx - side/2)),
-            y: Math.max(0, Math.round(cy - side/2)),
-            w: Math.round(Math.min(side, tmpCanvas.width)),
-            h: Math.round(Math.min(side, tmpCanvas.height))
-          };
+    <!-- <script type="text/javascript" src="flappybird.js"></script> -->
+    <script>
+        /* ------------------------- */
+        /* ------ SCREEN SLIDE ----- */
+        /* ------------------------- */
+        function goToScreen(n) {
+            document.getElementById("screens").style.transform =
+                `translateX(-${n * 100}vw)`;
         }
-      }
-    } catch (e) {
-      console.warn('FaceDetector error or permission issue, falling back to center crop.', e);
-    }
 
-    // fallback: center square crop
-    if (!faceBox) {
-      const side = Math.min(tmpCanvas.width, tmpCanvas.height);
-      faceBox = {
-        x: Math.round((tmpCanvas.width - side)/2),
-        y: Math.round((tmpCanvas.height - side)/2),
-        w: side, h: side
-      };
-    }
+        /* ------------------------- */
+        /* --- ELEMENTS --- */
+        const goToCamera = document.getElementById("goToCamera");
+        const captureBtn = document.getElementById("captureBtn");
+        const goToGame = document.getElementById("goToGame");
+        const restartGameBtn = document.getElementById("restartGame");
+        const finalScore = document.getElementById("finalScore");
 
-    // create output canvas with fixed size
-    const outSize = 240;
-    const out = document.createElement('canvas');
-    out.width = outSize; out.height = outSize;
-    const octx = out.getContext('2d');
+        const cameraPreview = document.getElementById("cameraPreview");
+        const selfiePreview = document.getElementById("selfiePreview");
 
-    // draw cropped face scaled to output
-    octx.drawImage(tmpCanvas, faceBox.x, faceBox.y, faceBox.w, faceBox.h, 0, 0, outSize, outSize);
+        let stream;
 
-    // optional circular mask to make it "head" shaped (helps blending)
-    // create circular clipped version on another canvas
-    const circ = document.createElement('canvas');
-    circ.width = outSize; circ.height = outSize;
-    const cctx = circ.getContext('2d');
-    cctx.beginPath();
-    cctx.ellipse(outSize/2, outSize/2, outSize/2, outSize/2, 0, 0, Math.PI*2);
-    cctx.closePath();
-    cctx.clip();
-    cctx.drawImage(out, 0, 0);
+        /* ------------------------- */
+        /* SCREEN 1 → SCREEN 2 */
+        goToCamera.onclick = async () => {
+            goToScreen(1);
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            cameraPreview.srcObject = stream;
+        };
 
-    selfieDataUrl = circ.toDataURL('image/png');
-    selfiePreview.src = selfieDataUrl;
-    selfiePreview.style.display = 'block';
-    enableElement(goToGameBtn, true);
-    retakeBtn.classList.remove('hidden');
+        /* ------------------------- */
+        /* CAPTURE SELFIE */
+        captureBtn.onclick = () => {
+            const temp = document.createElement("canvas");
+            const size = 240;
+            temp.width = size;
+            temp.height = size;
+            const ctx = temp.getContext("2d");
 
-    // optionally stop camera track? No, let user retake if wanted.
-  }
+            const video = cameraPreview;
+            const side = Math.min(video.videoWidth, video.videoHeight);
+            const sx = (video.videoWidth - side) / 2;
+            const sy = (video.videoHeight - side) / 2;
 
-  // ---- compose bird sprite (draw body + head) ----
-  function composeBirdSprite() {
-    // create a canvas sized to desired bird dims (scale with screen)
-    const baseW = Math.max(60, Math.round(W * 0.12));   // bird width about 12% of screen
-    const baseH = Math.max(80, Math.round(baseW * 1.4));
-    const c = document.createElement('canvas');
-    c.width = baseW; c.height = baseH;
-    const cc = c.getContext('2d');
+            ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
 
-    // draw body (resources.bodyGif might be static frame) scaled to bird body area
-    if (resources.bodyGif) {
-      cc.drawImage(resources.bodyGif, 0, 0, resources.bodyGif.width, resources.bodyGif.height, 0, 0, baseW, baseH);
-    } else {
-      // simple fallback rectangle
-      cc.fillStyle = '#ffcc00';
-      cc.fillRect(0, 0, baseW, baseH);
-    }
+            let imgData = temp.toDataURL("image/png");
+            selfiePreview.src = imgData;
+            selfiePreview.style.display = "block";
 
-    // if selfie exists, draw head
-    if (selfieDataUrl) {
-      const head = new Image();
-      head.src = selfieDataUrl;
-      head.onload = () => {
-        // placement tweaks (tweakable)
-        const headW = baseW * 0.44;
-        const headH = baseH * 0.34;
-        const headX = (baseW - headW)/2;
-        const headY = baseH * 0.08;
+            window.selfieImage = imgData;
+            goToGame.disabled = false;
+        };
 
-        // circular clip for head
-        cc.save();
-        cc.beginPath();
-        cc.ellipse(headX + headW/2, headY + headH/2, headW/2, headH/2, 0, 0, Math.PI*2);
-        cc.closePath();
-        cc.clip();
+        /* ------------------------- */
+        /* SCREEN 2 → SCREEN 3 */
+        let birdImg = new Image();
 
-        cc.drawImage(head, 0, 0, head.width, head.height, headX, headY, headW, headH);
-        cc.restore();
+        function loadBirdSelfie() {
+            const bodyImg = new Image();
+            bodyImg.src = "./1.gif";
 
-        composedBird = c;
-        // if user is already on screen3 and waiting, allow to start
-      };
-    } else {
-      composedBird = c;
-    }
-  }
+            const canvas = document.createElement("canvas");
+            canvas.width = birdWidth;
+            canvas.height = birdHeight;
+            const ctx = canvas.getContext("2d");
 
-  // ---- prepare board sizing with DPR support ----
-  function resizeBoard() {
-    W = Math.max(320, window.innerWidth);
-    H = Math.max(480, window.innerHeight);
-    const ratio = DPR();
+            bodyImg.onload = () => {
+                ctx.drawImage(
+                    bodyImg,
+                    0, 0, bodyImg.width, bodyImg.height,
+                    0, 0,
+                    birdWidth, birdHeight
+                );
 
-    board.style.width = W + 'px';
-    board.style.height = H + 'px';
-    board.width = Math.round(W * ratio);
-    board.height = Math.round(H * ratio);
+                if (window.selfieImage) {
+                    const selfie = new Image();
+                    selfie.src = window.selfieImage;
 
-    ctx = board.getContext('2d');
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0); // normalize coordinates (non-DPR)
+                    selfie.onload = () => {
 
-    // scale gameplay elements relative to screen
-    bird.w = Math.max(48, Math.round(W * 0.12));
-    bird.h = Math.max(64, Math.round(bird.w * 1.4));
-    bird.x = Math.round(W * 0.18);
-    bird.y = Math.round(H * 0.5 - bird.h/2);
+                        // --- ADJUSTED PER YOUR REQUEST ---
+                        const headWidth  = birdWidth * 0.36;
+                        const headHeight = birdHeight * 0.30;
 
-    pipeGap = Math.round(H * 0.28);
-    pipeSpeed = Math.max(2.2, W / 480 * 2.4);
-  }
+                        const headX = (birdWidth - headWidth) / 2 + 8;
 
-  // ---- spawn pipes ----
-  function spawnPipesOnce() {
-    const pipeW = Math.round(Math.max(48, W * 0.12));
-    const ph = Math.round(Math.max(240, pipeW * 8)); // tall image height conceptually
-    const variance = Math.round(H * 0.18);
-    const topY = -Math.floor(Math.random() * variance);
+                        const headY = birdHeight * 0.09 + 7; 
 
-    // top pipe drawn at topY (negative) then bottom pipe below with gap
-    pipes.push({
-      x: W + 20,
-      y: topY,
-      width: pipeW,
-      height: ph,
-      img: resources.topPipe || null,
-      passed: false,
-      type: 'top'
-    });
-    pipes.push({
-      x: W + 20,
-      y: topY + ph + pipeGap,
-      width: pipeW,
-      height: ph,
-      img: resources.bottomPipe || null,
-      passed: false,
-      type: 'bottom'
-    });
-  }
+                        ctx.save();
 
-  // ---- collision check ----
-  function rectsIntersect(a, b) {
-    return !(a.x + a.w < b.x || a.x > b.x + b.width || a.y + a.h < b.y || a.y > b.y + b.height);
-  }
 
-  // ---- reset game state ----
-  function resetGame() {
-    pipes = [];
-    score = 0;
-    spawnTimer = 0;
-    bird.y = Math.round(H/2 - bird.h/2);
-    bird.vy = 0;
-    running = false;
-    paused = false;
-    startOverlay.classList.remove('hidden');
-    gameOverPanel.classList.add('hidden');
-    updateScoreDisplay();
-  }
+                        ctx.beginPath();
+                        ctx.ellipse(
+                            headX + headWidth / 2,
+                            headY + headHeight / 2,
+                            headWidth / 2,
+                            headHeight / 2,
+                            0,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.closePath();
+                        ctx.clip();
 
-  // ---- start / play ----
-  function startGameLoop() {
-    if (!composedBird) composeBirdSprite();
-    running = true;
-    lastFrameTime = performance.now();
-    accumulator = 0;
-    startOverlay.classList.add('hidden');
-    gameOverPanel.classList.add('hidden');
-    requestAnimationFrame(loop);
-  }
+                        ctx.drawImage(
+                            selfie,
+                            0, 0, selfie.width, selfie.height,
+                            headX, headY,
+                            headWidth, headHeight
+                        );
 
-  // ---- game loop with fixed timestep ----
-  function loop(timestamp) {
-    if (!running) return;
-    if (paused) {
-      lastFrameTime = timestamp;
-      requestAnimationFrame(loop);
-      return;
-    }
+                        ctx.restore();
+                    };
+                }
+            };
 
-    let delta = timestamp - lastFrameTime;
-    if (delta > 200) delta = FIXED_DT; // clamp big jumps
-    lastFrameTime = timestamp;
-    accumulator += delta;
+            birdImg = canvas;
+        }
 
-    while (accumulator >= FIXED_DT) {
-      step(FIXED_DT / 1000); // seconds
-      accumulator -= FIXED_DT;
-    }
 
-    render();
-    requestAnimationFrame(loop);
-  }
 
-  function step(dt) {
-    // pipes movement
-    for (let p of pipes) p.x -= pipeSpeed;
+        goToGame.onclick = () => {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            goToScreen(2); // 3rd screen
+            loadBirdSelfie();
+        };
 
-    // spawn logic
-    spawnTimer += dt * 1000;
-    if (spawnTimer >= spawnInterval) {
-      spawnTimer = 0;
-      spawnPipesOnce();
-    }
+        // ******************************************************************
+        // **********************   GAME FUNCTIONS   ***************************
+        // ******************************************************************
 
-    // bird physics
-    bird.vy += gravity;
-    bird.y += bird.vy;
+        //board
+        let board;
+        let boardWidth;
+        let boardHeight;
+        let context;
 
-    // bound top
-    if (bird.y < 0) { bird.y = 0; bird.vy = 0; }
+        //bird
+        let birdWidth = 75; // width ratio
+        let birdHeight = 115;
+        let birdX;
+        let birdY;
 
-    // collision
-    for (let p of pipes) {
-      const pipeRect = { x: p.x, y: p.y, width: p.width, height: p.height };
-      const birdRect = { x: bird.x, y: bird.y, w: bird.w, h: bird.h };
-      if (rectsIntersect(birdRect, pipeRect)) {
-        endGame();
-        return;
-      }
-    }
+        let bird = { x: 0, y: 0, width: birdWidth, height: birdHeight };
 
-    // scored pipes
-    for (let i = 0; i < pipes.length; i += 2) {
-      const top = pipes[i];
-      if (top && !top.passed && bird.x > top.x + top.width) {
-        score += 1;
-        top.passed = true;
-        updateScoreDisplay();
-      }
-    }
+        //pipes
+        let pipeArray = [];
+        let pipeWidth = 64;
+        let pipeHeight = 512;
+        let pipeX;
+        let pipeY = 0;
 
-    // remove offscreen
-    while (pipes.length && pipes[0].x < -300) pipes.shift();
+        let topPipeImg;
+        let bottomPipeImg;
 
-    // hit ground
-    if (bird.y + bird.h > H) {
-      endGame();
-    }
-  }
+        //physics
+        let velocityX = -2; // pipe speed
+        let velocityY = 0;
+        let gravity = 0.4;
 
-  function render() {
-    // clear
-    ctx.clearRect(0,0,W,H);
+        let gameOver = false;
+        let score = 0;
+        let gameStarted = false;
+        let pipeInterval;
 
-    // draw background - left as background-image of screen3
+        // ------------------- INIT GAME -------------------
+        function initGame() {
+            board = document.getElementById("board");
 
-    // draw pipes
-    for (let p of pipes) {
-      if (p.img) {
-        // draw top/bottom image scaled to width/height
-        ctx.drawImage(p.img, 0, 0, p.img.width, p.img.height, px(p.x), px(p.y), px(p.width), px(p.height));
-      } else {
-        // fallback rectangle
-        ctx.fillStyle = '#2a9d8f';
-        ctx.fillRect(px(p.x), px(p.y), px(p.width), px(p.height));
-      }
-    }
+            // scale canvas to mobile screen
+            boardWidth = window.innerWidth;
+            boardHeight = window.innerHeight;
+            board.width = boardWidth;
+            board.height = boardHeight;
+            context = board.getContext("2d");
 
-    // draw bird sprite (composed canvas) centered on bird.x,y
-    if (composedBird) {
-      // draw with slight rotation based on velocity
-      const tilt = Math.max(-0.8, Math.min(0.6, bird.vy / 12));
-      ctx.save();
-      ctx.translate(bird.x + bird.w/2, bird.y + bird.h/2);
-      ctx.rotate(tilt);
-      ctx.drawImage(composedBird, -bird.w/2, -bird.h/2, bird.w, bird.h);
-      ctx.restore();
-    } else {
-      // fallback simple bird shape
-      ctx.fillStyle = '#ffcc00';
-      ctx.fillRect(px(bird.x), px(bird.y), px(bird.w), px(bird.h));
-    }
+            // bird position
+            birdX = boardWidth / 8;
+            birdY = boardHeight / 2;
+            bird.x = birdX;
+            bird.y = birdY;
+            bird.width = birdWidth;
+            bird.height = birdHeight;
 
-    // score already in top-right DOM element
-  }
+            // pipe start X
+            pipeX = boardWidth;
 
-  function updateScoreDisplay() {
-    scoreDisplay.textContent = Math.floor(score);
-  }
+            // load pipe images
+            topPipeImg = new Image();
+            topPipeImg.src = "./toppipe.png";
+            bottomPipeImg = new Image();
+            bottomPipeImg.src = "./bottompipe.png";
 
-  function endGame() {
-    running = false;
-    gameOverPanel.classList.remove('hidden');
-    finalScoreEl.textContent = 'Score: ' + Math.floor(score);
-  }
+            // load bird image if not selfie
+            if (!window.selfieImage) {
+                birdImg = new Image();
+                birdImg.src = "./body1.png";
+                birdImg.onload = () => {
+                    context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+                };
+            }
 
-  // ---- inputs ----
-  function onJump() {
-    if (!running) {
-      startGameLoop();
-    }
-    if (gameOverPanel && !gameOverPanel.classList.contains('hidden')) {
-      // ignore if game over
-      return;
-    }
-    bird.vy = jumpPower;
-  }
+            // add input listeners
+            document.addEventListener("keydown", jump);
+            board.addEventListener("mousedown", jump);
+            board.addEventListener("touchstart", jump);
 
-  function bindInputs() {
-    // touch / mouse on canvas
-    board.addEventListener('touchstart', (e) => { e.preventDefault(); onJump(); }, {passive:false});
-    board.addEventListener('mousedown', (e) => { e.preventDefault(); onJump(); });
+            requestAnimationFrame(update);
+        }
 
-    // keyboard
-    window.addEventListener('keydown', (e) => {
-      if (['Space','ArrowUp','KeyW'].includes(e.code)) {
-        e.preventDefault();
-        onJump();
-      }
-    });
+        // ------------------- JUMP FUNCTION -------------------
+        function jump() {
+            if (!gameStarted) {
+                gameStarted = true;
+                pipeInterval = setInterval(placePipes, 1500);
+            }
 
-    // UI buttons
-    playBtn.addEventListener('click', () => startGameLoop());
-    pauseBtn.addEventListener('click', () => {
-      paused = !paused;
-      pauseBtn.textContent = paused ? '▶' : '⏸';
-    });
-    restartBtn.addEventListener('click', () => {
-      resetGame();
-      startGameLoop();
-    });
-    homeBtn.addEventListener('click', () => {
-      resetGame();
-      goToScreen(0);
-    });
-  }
+            velocityY = -7;
 
-  // ---- lifecycle / wiring ----
-  goToCamera.addEventListener('click', async () => {
-    goToScreen(1);
-    await openCamera();
-  });
+            if (gameOver) {
+                // reset game
+                bird.y = birdY;
+                pipeArray = [];
+                score = 0;
+                gameOver = false;
+                gameStarted = false;
+                clearInterval(pipeInterval);
+            }
+        }
 
-  captureBtn.addEventListener('click', async () => {
-    enableElement(captureBtn, false);
-    cameraNotice.textContent = 'Detecting face...';
-    try {
-      await captureFaceOnly();
-      cameraNotice.textContent = 'Face captured.';
-      // compose sprite ready for game screen
-      composeBirdSprite();
-    } catch (e) {
-      console.error(e);
-      cameraNotice.textContent = 'Failed to capture. Try again.';
-    } finally {
-      enableElement(captureBtn, true);
-    }
-  });
+        // ------------------- UPDATE LOOP -------------------
+        function update() {
+            requestAnimationFrame(update);
+            context.clearRect(0, 0, board.width, board.height);
 
-  retakeBtn.addEventListener('click', async () => {
-    selfiePreview.style.display = 'none';
-    selfiePreview.src = '';
-    selfieDataUrl = null;
-    enableElement(goToGameBtn, false);
-    retakeBtn.classList.add('hidden');
-    // keep camera stream running for retake
-  });
+            // draw bird
+            context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
 
-  goToGameBtn.addEventListener('click', () => {
-    // stop camera tracks before game to save battery
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      cameraPreview.srcObject = null;
-    }
+            if (gameStarted) {
+                // apply gravity
+                velocityY += gravity;
+                bird.y = Math.max(bird.y + velocityY, 0);
 
-    // ensure composedBird is ready, if not, compose synchronously (it may load head image)
-    if (!composedBird) composeBirdSprite();
+                // check bottom
+                if (bird.y + bird.height > board.height) gameOver = true;
 
-    // resize and start on screen3
-    resizeBoard();
-    goToScreen(2);
+                // draw pipes
+                for (let i = 0; i < pipeArray.length; i++) {
+                    let pipe = pipeArray[i];
+                    pipe.x += velocityX;
+                    context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
 
-    // small delay to ensure composedBird loaded
-    setTimeout(() => {
-      resetGame();
-      bindInputs();
-      startOverlay.classList.remove('hidden');
-    }, 120);
-  });
+                    if (!pipe.passed && bird.x > pipe.x + pipe.width) {
+                        score += 0.5; // top+bottom = 1
+                        pipe.passed = true;
+                    }
 
-  // window resize: adjust board, recompute bird and pipe sizes
-  let resizeTimer = null;
-  window.addEventListener('resize', () => {
-    // small debounce
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      resizeBoard();
-      // re-compose sprite sized to new dims
-      composeBirdSprite();
-    }, 120);
-  });
+                    if (detectCollision(bird, pipe)) gameOver = true;
+                }
 
-  // initial preload and setup
-  await preload();
-  resizeBoard();
-  updateScoreDisplay();
+                // remove offscreen pipes
+                while (pipeArray.length > 0 && pipeArray[0].x < -pipeWidth) {
+                    pipeArray.shift();
+                }
+            }
 
-  // initial UI state
-  enableElement(goToGameBtn, false);
-  retakeBtn.classList.add('hidden');
+            // draw score
+            context.fillStyle = "white";
+            context.font = "45px sans-serif";
+            context.fillText(Math.floor(score), 5, 45);
 
-  // accessibility / instruction if FaceDetector not present
-  if (!('FaceDetector' in window)) {
-    cameraNotice.textContent = 'Native FaceDetector not available; using center-crop fallback.';
-  } else {
-    cameraNotice.textContent = 'FaceDetector available. Scanning will crop to detected face.';
-  }
+            if (gameOver) {
+                context.fillStyle = "red";
+                context.font = "40px sans-serif";
+                context.fillText("GAME OVER", board.width / 4, board.height / 2 - 20);
 
-  // ensure board element will accept focus for keyboard events
-  board.setAttribute('tabindex', '0');
+                context.fillStyle = "white";
+                context.font = "35px sans-serif";
+                context.fillText("Score: " + Math.floor(score), board.width / 3, board.height / 2 + 30);
+            }
+        }
 
-})();
-</script>
-</body>
+        // ------------------- PLACE PIPES -------------------
+        function placePipes() {
+            if (gameOver) return;
+
+            let randomPipeY = pipeY - pipeHeight / 4 - Math.random() * (pipeHeight / 2);
+            let openingSpace = board.height / 3;
+
+            let topPipe = {
+                img: topPipeImg,
+                x: pipeX,
+                y: randomPipeY,
+                width: pipeWidth,
+                height: pipeHeight,
+                passed: false,
+            };
+            let bottomPipe = {
+                img: bottomPipeImg,
+                x: pipeX,
+                y: randomPipeY + pipeHeight + openingSpace,
+                width: pipeWidth,
+                height: pipeHeight,
+                passed: false,
+            };
+            pipeArray.push(topPipe, bottomPipe);
+        }
+
+        // ------------------- COLLISION DETECTION -------------------
+        function detectCollision(a, b) {
+            return (
+                a.x < b.x + b.width &&
+                a.x + a.width > b.x &&
+                a.y < b.y + b.height &&
+                a.y + a.height > b.y
+            );
+        }
+
+        // ------------------- START GAME -------------------
+        goToGame.onclick = () => {
+            if (stream) stream.getTracks().forEach((t) => t.stop());
+            goToScreen(2); // third screen
+            loadBirdSelfie(); // your selfie overlay code
+            setTimeout(initGame, 100); // wait a moment for birdImg to load
+        };
+
+    </script>
+
+  </body>
 </html>
