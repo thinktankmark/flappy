@@ -122,335 +122,375 @@
         <div id="screen3" class="screen">
             <canvas id="board"></canvas>
         </div>
+
+        <!-- ------------------------- -->
+        <!-- SCREEN 4 - GAME OVER / SCORE -->
+        <!-- ------------------------- -->
+        <!-- <div id="screen4" class="screen">
+            <h2>Game Over</h2>
+            <p>Your Score: <span id="finalScore">0</span></p>
+            <button id="restartGame">Restart Game</button>
+        </div> -->
+
+
+
+
     </div>
 
     <!-- <script type="text/javascript" src="flappybird.js"></script> -->
     <script>
-        /* ------------------------- */
-        /* ------ SCREEN SLIDE ----- */
-        /* ------------------------- */
-        function goToScreen(n) {
-            document.getElementById("screens").style.transform =
-                `translateX(-${n * 100}vw)`;
-        }
+      /* ------------------------- */
+/* --- SCREEN SLIDE LOGIC --- */
+/* ------------------------- */
+function goToScreen(n) {
+    document.getElementById("screens").style.transform =
+        `translateX(-${n * 100}vw)`;
+}
 
-        /* ------------------------- */
-        /* --- ELEMENTS --- */
-        const goToCamera = document.getElementById("goToCamera");
-        const captureBtn = document.getElementById("captureBtn");
-        const goToGame = document.getElementById("goToGame");
-        const restartGameBtn = document.getElementById("restartGame");
-        const finalScore = document.getElementById("finalScore");
+/* ------------------------- */
+/* --- ELEMENTS --- */
+const goToCamera = document.getElementById("goToCamera");
+const captureBtn = document.getElementById("captureBtn");
+const goToGame = document.getElementById("goToGame");
+const restartGameBtn = document.getElementById("restartGame");
+const finalScore = document.getElementById("finalScore");
 
-        const cameraPreview = document.getElementById("cameraPreview");
-        const selfiePreview = document.getElementById("selfiePreview");
+const cameraPreview = document.getElementById("cameraPreview");
+const selfiePreview = document.getElementById("selfiePreview");
 
-        let stream;
+let stream;
 
-        /* ------------------------- */
-        /* SCREEN 1 → SCREEN 2 */
-        goToCamera.onclick = async () => {
-            goToScreen(1);
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            cameraPreview.srcObject = stream;
-        };
+/* ------------------------- */
+/* SCREEN 1 → SCREEN 2 */
+goToCamera.onclick = async () => {
+    goToScreen(1);
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    cameraPreview.srcObject = stream;
+};
 
-        /* ------------------------- */
-        /* CAPTURE SELFIE */
-        captureBtn.onclick = () => {
-            const temp = document.createElement("canvas");
-            const size = 240;
-            temp.width = size;
-            temp.height = size;
-            const ctx = temp.getContext("2d");
+/* ------------------------- */
+/* CAPTURE SELFIE */
+captureBtn.onclick = () => {
+    const temp = document.createElement("canvas");
+    const size = 240;
+    temp.width = size;
+    temp.height = size;
+    const ctx = temp.getContext("2d");
 
-            const video = cameraPreview;
-            const side = Math.min(video.videoWidth, video.videoHeight);
-            const sx = (video.videoWidth - side) / 2;
-            const sy = (video.videoHeight - side) / 2;
+    const video = cameraPreview;
+    const side = Math.min(video.videoWidth, video.videoHeight);
+    const sx = (video.videoWidth - side) / 2;
+    const sy = (video.videoHeight - side) / 2;
 
-            ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
+    ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
 
-            let imgData = temp.toDataURL("image/png");
-            selfiePreview.src = imgData;
-            selfiePreview.style.display = "block";
+    let imgData = temp.toDataURL("image/png");
+    selfiePreview.src = imgData;
+    selfiePreview.style.display = "block";
 
-            window.selfieImage = imgData;
-            goToGame.disabled = false;
-        };
+    window.selfieImage = imgData;
+    goToGame.disabled = false;
+    // const temp = document.createElement("canvas");
+    // temp.width = 240;
+    // temp.height = 240;
+    // const ctx = temp.getContext("2d");
+    // ctx.drawImage(cameraPreview, 0, 0, 240, 240);
 
-        /* ------------------------- */
-        /* SCREEN 2 → SCREEN 3 */
-        let birdImg = new Image();
+    // let imgData = temp.toDataURL("image/png");
+    // selfiePreview.src = imgData;
+    // selfiePreview.style.display = "block";
 
-        function loadBirdSelfie() {
-            const bodyImg = new Image();
-            bodyImg.src = "./1.gif";
+    // // store for use in game
+    // window.selfieImage = imgData;
 
-            const canvas = document.createElement("canvas");
-            canvas.width = birdWidth;
-            canvas.height = birdHeight;
-            const ctx = canvas.getContext("2d");
+    // goToGame.disabled = false;
+};
 
-            bodyImg.onload = () => {
+/* ------------------------- */
+/* SCREEN 2 → SCREEN 3 */
+let birdImg = new Image();
+
+function loadBirdSelfie() {
+    const bodyImg = new Image();
+    bodyImg.src = "./1.gif";
+
+    const canvas = document.createElement("canvas");
+    canvas.width = birdWidth;
+    canvas.height = birdHeight;
+    const ctx = canvas.getContext("2d");
+
+    bodyImg.onload = () => {
+        ctx.drawImage(
+            bodyImg,
+            0, 0, bodyImg.width, bodyImg.height,
+            0, 0,
+            birdWidth, birdHeight
+        );
+
+        if (window.selfieImage) {
+            const selfie = new Image();
+            selfie.src = window.selfieImage;
+
+            selfie.onload = () => {
+
+                // --- ADJUSTED PER YOUR REQUEST ---
+                const headWidth  = birdWidth * 0.36;
+                const headHeight = birdHeight * 0.30;
+
+                // move right +4px
+                const headX = (birdWidth - headWidth) / 2 + 8;
+
+                // move down +4px
+                const headY = birdHeight * 0.09 + 7;                 // correct face start
+
+                ctx.save();
+
+                // OVAL shape
+                ctx.beginPath();
+                ctx.ellipse(
+                    headX + headWidth / 2,
+                    headY + headHeight / 2,
+                    headWidth / 2,
+                    headHeight / 2,
+                    0,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.closePath();
+                ctx.clip();
+
                 ctx.drawImage(
-                    bodyImg,
-                    0, 0, bodyImg.width, bodyImg.height,
-                    0, 0,
-                    birdWidth, birdHeight
+                    selfie,
+                    0, 0, selfie.width, selfie.height,
+                    headX, headY,
+                    headWidth, headHeight
                 );
 
-                if (window.selfieImage) {
-                    const selfie = new Image();
-                    selfie.src = window.selfieImage;
-
-                    selfie.onload = () => {
-
-                        // --- ADJUSTED PER YOUR REQUEST ---
-                        const headWidth  = birdWidth * 0.36;
-                        const headHeight = birdHeight * 0.30;
-
-                        const headX = (birdWidth - headWidth) / 2 + 8;
-
-                        const headY = birdHeight * 0.09 + 7; 
-
-                        ctx.save();
-
-
-                        ctx.beginPath();
-                        ctx.ellipse(
-                            headX + headWidth / 2,
-                            headY + headHeight / 2,
-                            headWidth / 2,
-                            headHeight / 2,
-                            0,
-                            0,
-                            Math.PI * 2
-                        );
-                        ctx.closePath();
-                        ctx.clip();
-
-                        ctx.drawImage(
-                            selfie,
-                            0, 0, selfie.width, selfie.height,
-                            headX, headY,
-                            headWidth, headHeight
-                        );
-
-                        ctx.restore();
-                    };
-                }
+                ctx.restore();
             };
-
-            birdImg = canvas;
         }
+    };
+
+    birdImg = canvas;
+}
 
 
 
-        goToGame.onclick = () => {
-            if (stream) stream.getTracks().forEach(t => t.stop());
-            goToScreen(2); // 3rd screen
-            loadBirdSelfie();
-        };
 
-        // ******************************************************************
-        // **********************   GAME FUNCTIONS   ***************************
-        // ******************************************************************
 
-        //board
-        let board;
-        let boardWidth;
-        let boardHeight;
-        let context;
 
-        //bird
-        let birdWidth = 75; // width ratio
-        let birdHeight = 115;
-        let birdX;
-        let birdY;
 
-        let bird = { x: 0, y: 0, width: birdWidth, height: birdHeight };
 
-        //pipes
-        let pipeArray = [];
-        let pipeWidth = 64;
-        let pipeHeight = 512;
-        let pipeX;
-        let pipeY = 0;
 
-        let topPipeImg;
-        let bottomPipeImg;
+goToGame.onclick = () => {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    goToScreen(2); // 3rd screen
+    loadBirdSelfie();
+};
 
-        //physics
-        let velocityX = -2; // pipe speed
-        let velocityY = 0;
-        let gravity = 0.4;
 
-        let gameOver = false;
-        let score = 0;
-        let gameStarted = false;
-        let pipeInterval;
+// ******************************************************************
+// **********************   FLAPPY GAME   ***************************
+// ******************************************************************
 
-        // ------------------- INIT GAME -------------------
-        function initGame() {
-            board = document.getElementById("board");
+// ******************************************************************
+// **********************   FLAPPY GAME   ***************************
+// ******************************************************************
 
-            // scale canvas to mobile screen
-            boardWidth = window.innerWidth;
-            boardHeight = window.innerHeight;
-            board.width = boardWidth;
-            board.height = boardHeight;
-            context = board.getContext("2d");
+//board
+let board;
+let boardWidth;
+let boardHeight;
+let context;
 
-            // bird position
-            birdX = boardWidth / 8;
-            birdY = boardHeight / 2;
-            bird.x = birdX;
-            bird.y = birdY;
-            bird.width = birdWidth;
-            bird.height = birdHeight;
+//bird
+let birdWidth = 75; // width ratio
+let birdHeight = 115;
+let birdX;
+let birdY;
 
-            // pipe start X
-            pipeX = boardWidth;
+let bird = { x: 0, y: 0, width: birdWidth, height: birdHeight };
 
-            // load pipe images
-            topPipeImg = new Image();
-            topPipeImg.src = "./toppipe.png";
-            bottomPipeImg = new Image();
-            bottomPipeImg.src = "./bottompipe.png";
+//pipes
+let pipeArray = [];
+let pipeWidth = 64;
+let pipeHeight = 512;
+let pipeX;
+let pipeY = 0;
 
-            // load bird image if not selfie
-            if (!window.selfieImage) {
-                birdImg = new Image();
-                birdImg.src = "./body1.png";
-                birdImg.onload = () => {
-                    context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
-                };
-            }
+let topPipeImg;
+let bottomPipeImg;
 
-            // add input listeners
-            document.addEventListener("keydown", jump);
-            board.addEventListener("mousedown", jump);
-            board.addEventListener("touchstart", jump);
+//physics
+let velocityX = -2; // pipe speed
+let velocityY = 0;
+let gravity = 0.4;
 
-            requestAnimationFrame(update);
-        }
+let gameOver = false;
+let score = 0;
+let gameStarted = false;
+let pipeInterval;
 
-        // ------------------- JUMP FUNCTION -------------------
-        function jump() {
-            if (!gameStarted) {
-                gameStarted = true;
-                pipeInterval = setInterval(placePipes, 1500);
-            }
+// ------------------- INIT GAME -------------------
+function initGame() {
+    board = document.getElementById("board");
 
-            velocityY = -7;
+    // scale canvas to mobile screen
+    boardWidth = window.innerWidth;
+    boardHeight = window.innerHeight;
+    board.width = boardWidth;
+    board.height = boardHeight;
+    context = board.getContext("2d");
 
-            if (gameOver) {
-                // reset game
-                bird.y = birdY;
-                pipeArray = [];
-                score = 0;
-                gameOver = false;
-                gameStarted = false;
-                clearInterval(pipeInterval);
-            }
-        }
+    // bird position
+    birdX = boardWidth / 8;
+    birdY = boardHeight / 2;
+    bird.x = birdX;
+    bird.y = birdY;
+    bird.width = birdWidth;
+    bird.height = birdHeight;
 
-        // ------------------- UPDATE LOOP -------------------
-        function update() {
-            requestAnimationFrame(update);
-            context.clearRect(0, 0, board.width, board.height);
+    // pipe start X
+    pipeX = boardWidth;
 
-            // draw bird
+    // load pipe images
+    topPipeImg = new Image();
+    topPipeImg.src = "./toppipe.png";
+    bottomPipeImg = new Image();
+    bottomPipeImg.src = "./bottompipe.png";
+
+    // load bird image if not selfie
+    if (!window.selfieImage) {
+        birdImg = new Image();
+        birdImg.src = "./body1.png";
+        birdImg.onload = () => {
             context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
-
-            if (gameStarted) {
-                // apply gravity
-                velocityY += gravity;
-                bird.y = Math.max(bird.y + velocityY, 0);
-
-                // check bottom
-                if (bird.y + bird.height > board.height) gameOver = true;
-
-                // draw pipes
-                for (let i = 0; i < pipeArray.length; i++) {
-                    let pipe = pipeArray[i];
-                    pipe.x += velocityX;
-                    context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
-
-                    if (!pipe.passed && bird.x > pipe.x + pipe.width) {
-                        score += 0.5; // top+bottom = 1
-                        pipe.passed = true;
-                    }
-
-                    if (detectCollision(bird, pipe)) gameOver = true;
-                }
-
-                // remove offscreen pipes
-                while (pipeArray.length > 0 && pipeArray[0].x < -pipeWidth) {
-                    pipeArray.shift();
-                }
-            }
-
-            // draw score
-            context.fillStyle = "white";
-            context.font = "45px sans-serif";
-            context.fillText(Math.floor(score), 5, 45);
-
-            if (gameOver) {
-                context.fillStyle = "red";
-                context.font = "40px sans-serif";
-                context.fillText("GAME OVER", board.width / 4, board.height / 2 - 20);
-
-                context.fillStyle = "white";
-                context.font = "35px sans-serif";
-                context.fillText("Score: " + Math.floor(score), board.width / 3, board.height / 2 + 30);
-            }
-        }
-
-        // ------------------- PLACE PIPES -------------------
-        function placePipes() {
-            if (gameOver) return;
-
-            let randomPipeY = pipeY - pipeHeight / 4 - Math.random() * (pipeHeight / 2);
-            let openingSpace = board.height / 3;
-
-            let topPipe = {
-                img: topPipeImg,
-                x: pipeX,
-                y: randomPipeY,
-                width: pipeWidth,
-                height: pipeHeight,
-                passed: false,
-            };
-            let bottomPipe = {
-                img: bottomPipeImg,
-                x: pipeX,
-                y: randomPipeY + pipeHeight + openingSpace,
-                width: pipeWidth,
-                height: pipeHeight,
-                passed: false,
-            };
-            pipeArray.push(topPipe, bottomPipe);
-        }
-
-        // ------------------- COLLISION DETECTION -------------------
-        function detectCollision(a, b) {
-            return (
-                a.x < b.x + b.width &&
-                a.x + a.width > b.x &&
-                a.y < b.y + b.height &&
-                a.y + a.height > b.y
-            );
-        }
-
-        // ------------------- START GAME -------------------
-        goToGame.onclick = () => {
-            if (stream) stream.getTracks().forEach((t) => t.stop());
-            goToScreen(2); // third screen
-            loadBirdSelfie(); // your selfie overlay code
-            setTimeout(initGame, 100); // wait a moment for birdImg to load
         };
+    }
+
+    // add input listeners
+    document.addEventListener("keydown", jump);
+    board.addEventListener("mousedown", jump);
+    board.addEventListener("touchstart", jump);
+
+    requestAnimationFrame(update);
+}
+
+// ------------------- JUMP FUNCTION -------------------
+function jump() {
+    if (!gameStarted) {
+        gameStarted = true;
+        pipeInterval = setInterval(placePipes, 1500);
+    }
+
+    velocityY = -7;
+
+    if (gameOver) {
+        // reset game
+        bird.y = birdY;
+        pipeArray = [];
+        score = 0;
+        gameOver = false;
+        gameStarted = false;
+        clearInterval(pipeInterval);
+    }
+}
+
+// ------------------- UPDATE LOOP -------------------
+function update() {
+    requestAnimationFrame(update);
+    context.clearRect(0, 0, board.width, board.height);
+
+    // draw bird
+    context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+
+    if (gameStarted) {
+        // apply gravity
+        velocityY += gravity;
+        bird.y = Math.max(bird.y + velocityY, 0);
+
+        // check bottom
+        if (bird.y + bird.height > board.height) gameOver = true;
+
+        // draw pipes
+        for (let i = 0; i < pipeArray.length; i++) {
+            let pipe = pipeArray[i];
+            pipe.x += velocityX;
+            context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
+
+            if (!pipe.passed && bird.x > pipe.x + pipe.width) {
+                score += 0.5; // top+bottom = 1
+                pipe.passed = true;
+            }
+
+            if (detectCollision(bird, pipe)) gameOver = true;
+        }
+
+        // remove offscreen pipes
+        while (pipeArray.length > 0 && pipeArray[0].x < -pipeWidth) {
+            pipeArray.shift();
+        }
+    }
+
+    // draw score
+    context.fillStyle = "white";
+    context.font = "45px sans-serif";
+    context.fillText(Math.floor(score), 5, 45);
+
+    if (gameOver) {
+        context.fillStyle = "red";
+        context.font = "40px sans-serif";
+        context.fillText("GAME OVER", board.width / 4, board.height / 2 - 20);
+
+        context.fillStyle = "white";
+        context.font = "35px sans-serif";
+        context.fillText("Score: " + Math.floor(score), board.width / 3, board.height / 2 + 30);
+    }
+}
+
+// ------------------- PLACE PIPES -------------------
+function placePipes() {
+    if (gameOver) return;
+
+    let randomPipeY = pipeY - pipeHeight / 4 - Math.random() * (pipeHeight / 2);
+    let openingSpace = board.height / 3;
+
+    let topPipe = {
+        img: topPipeImg,
+        x: pipeX,
+        y: randomPipeY,
+        width: pipeWidth,
+        height: pipeHeight,
+        passed: false,
+    };
+    let bottomPipe = {
+        img: bottomPipeImg,
+        x: pipeX,
+        y: randomPipeY + pipeHeight + openingSpace,
+        width: pipeWidth,
+        height: pipeHeight,
+        passed: false,
+    };
+    pipeArray.push(topPipe, bottomPipe);
+}
+
+// ------------------- COLLISION DETECTION -------------------
+function detectCollision(a, b) {
+    return (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+    );
+}
+
+// ------------------- START GAME -------------------
+goToGame.onclick = () => {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    goToScreen(2); // third screen
+    loadBirdSelfie(); // your selfie overlay code
+    setTimeout(initGame, 100); // wait a moment for birdImg to load
+};
 
     </script>
 
